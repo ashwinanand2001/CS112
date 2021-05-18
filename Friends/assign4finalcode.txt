@@ -1,0 +1,300 @@
+package friends;
+
+import java.util.ArrayList;
+import structures.Queue;
+import structures.Stack;
+
+public class Friends {
+
+	/**
+	 * Finds the shortest chain of people from p1 to p2.
+	 * Chain is returned as a sequence of names starting with p1,
+	 * and ending with p2. Each pair (n1,n2) of consecutive names in
+	 * the returned chain is an edge in the graph.
+	 * 
+	 * @param g Graph for which shortest chain is to be found.
+	 * @param p1 Person with whom the chain originates
+	 * @param p2 Person at whom the chain terminates
+	 * @return The shortest chain from p1 to p2. Null or empty array list if there is no
+	 *         path from p1 to p2
+	 */
+	public static ArrayList<String> shortestChain(Graph g, String p1, String p2) {
+
+	if (p1==null || p2==null || g == null) 
+	{
+		return null;
+	}
+
+	boolean[] visittrue = new boolean[g.members.length];
+	
+	Person[] traversed = new Person[g.members.length];
+	
+	ArrayList<String> shortlist = new ArrayList<String>();
+
+	Queue<Person> que = new Queue<Person>();
+		
+	int ind = g.map.get(p1);
+	
+	que.enqueue(g.members[ind]);
+	
+	visittrue[ind] = true;
+	
+	while (que.isEmpty() == false) 
+	{
+		Person plist = que.dequeue();
+		
+		int pindex = g.map.get(plist.name);
+	
+		visittrue[pindex] = true;
+		
+		Friend friendname = plist.first;
+		
+		if (friendname == null)
+		{ 
+			return null;
+		}
+		
+		while (friendname != null) 
+		{
+			
+			if (visittrue[friendname.fnum] == false) 
+			{
+				visittrue[friendname.fnum] = true;
+
+				traversed[friendname.fnum] = plist; 
+
+				que.enqueue(g.members[friendname.fnum]);
+				
+				if (g.members[friendname.fnum].name.equals(p2)) 
+				{
+					plist = g.members[friendname.fnum];
+					
+					while (plist.name.equals(p1) == false) 
+					{
+						shortlist.add(0, plist.name);
+
+						plist = traversed[g.map.get(plist.name)];
+					}
+					shortlist.add(0, p1);
+
+					return shortlist;
+				}
+			}
+			friendname = friendname.next;
+		}
+	}
+
+	return null;
+}
+	
+	/**
+	 * Finds all cliques of students in a given school.
+	 * 
+	 * Returns an array list of array lists - each constituent array list contains
+	 * the names of all students in a clique.
+	 * 
+	 * @param g Graph for which cliques are to be found.
+	 * @param school Name of school
+	 * @return Array list of clique array lists. Null or empty array list if there is no student in the
+	 *         given school
+	 */
+public static ArrayList<ArrayList<String>> cliques(Graph g, String school) {
+		
+	if (g == null || school == null) 
+	{
+		return null;
+	}
+
+	boolean[] rectouched = new boolean[g.members.length];
+
+	ArrayList<ArrayList<String>> cliqueslist= new ArrayList<ArrayList<String>>();
+
+	return bsearch(g, g.members[0], cliqueslist, school, rectouched);
+
+	}	
+
+	
+	/**
+	 * Finds and returns all connectors in the graph.
+	 * 
+	 * @param g Graph for which connectors needs to be found.
+	 * @return Names of all connectors. Null or empty array list if there are no connectors.
+	 */
+	public static ArrayList<String> connectors(Graph g) {
+		if (g == null) 
+		{
+			return null;
+		}
+		
+		ArrayList<String> earlierrec = new ArrayList<String>();	
+
+		ArrayList<String> listofconnectors = new ArrayList<String>();
+			
+		int[] searchnum= new int[g.members.length];
+		
+		boolean[] visitstat = new boolean[g.members.length];
+		
+		int[] past = new int[g.members.length];
+		
+		for (int h = 0; h < g.members.length; h++)
+		{
+			if (visitstat[h] == false) 
+			{
+				listofconnectors = dsearch(listofconnectors, g, visitstat, g.members[h], new int[] {0,0}, earlierrec, searchnum, past, true);
+			}
+		}
+		
+		return listofconnectors;
+	}
+
+
+	private static ArrayList<ArrayList<String>> bsearch(Graph g, Person start, ArrayList<ArrayList<String>> lcliques, String school, boolean[] touched){
+		
+		Queue<Person> qlist = new Queue<Person>();
+		
+		qlist.enqueue(start);
+		
+		touched[g.map.get(start.name)] = true;
+		
+		ArrayList<String> results = new ArrayList<String>();
+	
+		Person pv = new Person();
+		
+		Friend personname;
+
+		boolean var=false;
+		
+		if ( start.school == null || start.school.equals(school) == false) 
+		{
+			qlist.dequeue();
+			
+			for (int w = 0; w < touched.length; w++) 
+			{
+				if (touched[w] == false) 
+				{
+					return bsearch(g, g.members[w], lcliques, school, touched);
+				}
+			}
+		}
+		
+		while (qlist.isEmpty() == false) 
+		{
+			
+			pv = qlist.dequeue();
+	
+			personname = pv.first;
+	
+			results.add(pv.name);
+			
+			while (personname != null) 
+			{
+				
+				if (touched[personname.fnum] == false) 
+				{
+					
+					if (g.members[personname.fnum].school == null) 
+					{
+						var=true;
+					}
+					else 
+					{
+						if (g.members[personname.fnum].school.equals(school)) 
+						{
+							qlist.enqueue(g.members[personname.fnum]);
+						}
+					}
+					touched[personname.fnum] = true;
+				}
+				personname = personname.next;
+			}
+		}
+		
+		if (results.isEmpty() && lcliques.isEmpty() == false) 
+		{
+			var=true;
+		} 
+		else 
+		{
+			lcliques.add(results);
+		}
+		
+		for (int x = 0; x < touched.length; x++) 
+		{
+			if (touched[x] == false) 
+			{
+				return bsearch(g, g.members[x], lcliques, school, touched);
+			}
+		}		
+		return lcliques;
+	}
+
+
+	private static ArrayList<String> dsearch(ArrayList<String> friconnect, Graph g, boolean[] visrec, Person start,  int[] count, ArrayList<String> backw, int[] numsearch, int[] back, boolean started){
+		
+		visrec[g.map.get(start.name)] = true;
+		
+		Friend f = start.first;
+		
+		numsearch[g.map.get(start.name)] = count[0];
+
+		back[g.map.get(start.name)] = count[1];
+
+		while (f!= null) 
+		{
+			
+			if (visrec[f.fnum] == false) 
+			{
+				
+				count[0]+=1;
+
+				count[1]+=1;
+				
+				friconnect = dsearch(friconnect, g, visrec, g.members[f.fnum], count, backw, numsearch, back, false);
+				
+				if (numsearch[g.map.get(start.name)] <= back[f.fnum]) 
+				{
+					
+					if ((friconnect.contains(start.name) == false && started == false) || (friconnect.contains(start.name) == false && backw.contains(start.name))) 
+					{
+						friconnect.add(start.name);
+					}
+				}
+				else 
+				{
+					int f1 = back[g.map.get(start.name)];
+					
+					int f2 = back[f.fnum];
+					
+					if (f2 > f1) 
+					{
+						back[g.map.get(start.name)] = f1;
+					}
+					else 
+					{
+						back[g.map.get(start.name)] = f2;
+					} 
+				}		
+			backw.add(start.name);
+
+			}
+			else 
+			{
+				int f3 = back[g.map.get(start.name)];
+
+				int f4 = numsearch[f.fnum];
+				
+				if (f4 > f3) 
+				{
+					back[g.map.get(start.name)] = f3;
+				}
+				
+				else
+				{ 
+					back[g.map.get(start.name)] = f4;
+				}
+			}
+			f = f.next;
+		}
+		return friconnect;
+	}
+}
